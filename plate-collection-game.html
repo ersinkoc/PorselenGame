@@ -559,6 +559,7 @@
         let brokenPieces = [];
         let wagons = [];
         let currentWagon = null;
+        let nextWagon = null;
         let wagonTrack = null;
         let brokenPiecesConveyor = null;
         let brokenPiecesOnConveyor = [];
@@ -766,18 +767,42 @@
         }
 
         function createEnvironment() {
-            // Floor - bright factory floor
-            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            // Main factory floor (with channel cut-out)
             const floorMaterial = new THREE.MeshStandardMaterial({
                 color: 0xb0b0b0,
                 roughness: 0.3,
                 metalness: 0.1,
                 envMapIntensity: 0.3
             });
-            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.receiveShadow = true;
-            scene.add(floor);
+            
+            // Left side of floor
+            const leftFloorGeometry = new THREE.PlaneGeometry(20, 50);
+            const leftFloor = new THREE.Mesh(leftFloorGeometry, floorMaterial);
+            leftFloor.rotation.x = -Math.PI / 2;
+            leftFloor.position.set(-10, 0, 0);
+            leftFloor.receiveShadow = true;
+            scene.add(leftFloor);
+            
+            // Right side of floor (ends at train track)
+            const rightFloorGeometry = new THREE.PlaneGeometry(4, 50);
+            const rightFloor = new THREE.Mesh(rightFloorGeometry, floorMaterial);
+            rightFloor.rotation.x = -Math.PI / 2;
+            rightFloor.position.set(16, 0, 0);
+            rightFloor.receiveShadow = true;
+            scene.add(rightFloor);
+            
+            // Channel floor (visible - light colored)
+            const channelFloorGeometry = new THREE.PlaneGeometry(6, 50);
+            const channelFloorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+            const channelFloor = new THREE.Mesh(channelFloorGeometry, channelFloorMaterial);
+            channelFloor.rotation.x = -Math.PI / 2;
+            channelFloor.position.set(11, -1.5, 0);
+            channelFloor.receiveShadow = true;
+            scene.add(channelFloor);
 
             // Environment map for reflections
             const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -800,12 +825,13 @@
                 metalness: 0.2
             });
 
-            for (let i = 0; i < 4; i++) {
+            // Only create left side pillars
+            for (let i = 0; i < 2; i++) {
                 const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
                 pillar.position.set(
-                    i % 2 === 0 ? -15 : 20, // Moved right pillars further away from rails
+                    -15,
                     5,
-                    i < 2 ? -15 : 15
+                    i === 0 ? -15 : 15
                 );
                 pillar.castShadow = true;
                 scene.add(pillar);
@@ -819,14 +845,15 @@
                 metalness: 0.3
             });
 
+            // Only left side pipes
             const pipe1 = new THREE.Mesh(pipeGeometry, pipeMaterial);
             pipe1.rotation.z = Math.PI / 2;
-            pipe1.position.set(0, 8, -15);
+            pipe1.position.set(-10, 8, -15);
             scene.add(pipe1);
 
             const pipe2 = new THREE.Mesh(pipeGeometry, pipeMaterial);
             pipe2.rotation.z = Math.PI / 2;
-            pipe2.position.set(0, 8, 15);
+            pipe2.position.set(-10, 8, 15);
             scene.add(pipe2);
         }
 
@@ -906,12 +933,12 @@
         function createOven() {
             const ovenGroup = new THREE.Group();
             
-            // Oven body
-            const ovenGeometry = new THREE.BoxGeometry(4, 4, 4);
+            // Larger industrial oven
+            const ovenGeometry = new THREE.BoxGeometry(5, 4, 6);
             const ovenMaterial = new THREE.MeshStandardMaterial({
-                color: 0x444444,
-                roughness: 0.8,
-                metalness: 0.2
+                color: 0x2a2a2a,
+                roughness: 0.7,
+                metalness: 0.3
             });
             const ovenBody = new THREE.Mesh(ovenGeometry, ovenMaterial);
             ovenBody.position.set(-12, 2, 0);
@@ -919,51 +946,214 @@
             ovenBody.receiveShadow = true;
             ovenGroup.add(ovenBody);
             
-            // Oven opening (no door, just glowing inside)
-            const openingGeometry = new THREE.BoxGeometry(2.5, 2, 0.1);
-            const openingMaterial = new THREE.MeshBasicMaterial({
-                color: 0xff4400,
-                emissive: 0xff4400,
-                emissiveIntensity: 2
+            // Front opening frame (no black panel)
+            const frameThickness = 0.2;
+            const frameMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.8,
+                metalness: 0.3
             });
-            const opening = new THREE.Mesh(openingGeometry, openingMaterial);
-            opening.position.set(-9.95, 2, 0);
-            ovenGroup.add(opening);
             
-            // Heat particles
-            for (let i = 0; i < 5; i++) {
-                const particleGeometry = new THREE.SphereGeometry(0.05);
-                const particleMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xff8800,
+            // Top frame
+            const topFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(3.2, frameThickness, 0.3),
+                frameMaterial
+            );
+            topFrame.position.set(-9.4, 3.35, 0);
+            ovenGroup.add(topFrame);
+            
+            // Bottom frame
+            const bottomFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(3.2, frameThickness, 0.3),
+                frameMaterial
+            );
+            bottomFrame.position.set(-9.4, 0.65, 0);
+            ovenGroup.add(bottomFrame);
+            
+            // Side frames
+            const sideFrame1 = new THREE.Mesh(
+                new THREE.BoxGeometry(frameThickness, 2.7, 0.3),
+                frameMaterial
+            );
+            sideFrame1.position.set(-9.4, 2, 1.5);
+            ovenGroup.add(sideFrame1);
+            
+            const sideFrame2 = new THREE.Mesh(
+                new THREE.BoxGeometry(frameThickness, 2.7, 0.3),
+                frameMaterial
+            );
+            sideFrame2.position.set(-9.4, 2, -1.5);
+            ovenGroup.add(sideFrame2);
+            
+            // Fire effect inside oven
+            const fireGroup = new THREE.Group();
+            for (let i = 0; i < 8; i++) {
+                const flameGeometry = new THREE.ConeGeometry(0.3, 1.2, 4);
+                const flameMaterial = new THREE.MeshBasicMaterial({
+                    color: i < 4 ? 0xff4400 : 0xffaa00,
                     transparent: true,
-                    opacity: 0.6
+                    opacity: 0.8
                 });
-                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-                particle.position.set(-10 + Math.random() * 0.5, 2.5 + i * 0.3, (Math.random() - 0.5) * 0.5);
-                particle.userData.floatOffset = Math.random() * Math.PI * 2;
-                ovenGroup.add(particle);
+                const flame = new THREE.Mesh(flameGeometry, flameMaterial);
+                flame.position.set(
+                    -11 + (Math.random() - 0.5) * 2,
+                    0.8 + Math.random() * 0.5,
+                    (Math.random() - 0.5) * 3
+                );
+                flame.rotation.z = (Math.random() - 0.5) * 0.3;
+                flame.userData.baseY = flame.position.y;
+                flame.userData.animOffset = Math.random() * Math.PI * 2;
+                fireGroup.add(flame);
             }
+            ovenGroup.add(fireGroup);
+            window.fireGroup = fireGroup;
             
-            // Chimney
-            const chimneyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2);
+            // Side opening frame for raw product entry
+            const sideEntryTop = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, frameThickness, 2.2),
+                frameMaterial
+            );
+            sideEntryTop.position.set(-12, 2.35, -3);
+            ovenGroup.add(sideEntryTop);
+            
+            const sideEntryBottom = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, frameThickness, 2.2),
+                frameMaterial
+            );
+            sideEntryBottom.position.set(-12, 0.65, -3);
+            ovenGroup.add(sideEntryBottom);
+            
+            // Chimney with smoke
+            const chimneyGeometry = new THREE.CylinderGeometry(0.4, 0.4, 3);
             const chimneyMaterial = new THREE.MeshStandardMaterial({
                 color: 0x333333,
                 roughness: 0.8,
                 metalness: 0.3
             });
             const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
-            chimney.position.set(-12, 5, 0);
+            chimney.position.set(-12, 5.5, -1);
             ovenGroup.add(chimney);
             
-            // Add point light for oven glow
-            const ovenLight = new THREE.PointLight(0xff6600, 1, 8);
-            ovenLight.position.set(-10, 2, 0);
-            ovenGroup.add(ovenLight);
+            // Smoke particles
+            for (let i = 0; i < 8; i++) {
+                const smokeGeometry = new THREE.SphereGeometry(0.2 + Math.random() * 0.2);
+                const smokeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x666666,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const smoke = new THREE.Mesh(smokeGeometry, smokeMaterial);
+                smoke.position.set(-12, 7 + i * 0.5, -1 + (Math.random() - 0.5) * 0.5);
+                smoke.userData.riseSpeed = 0.02 + Math.random() * 0.02;
+                smoke.userData.baseY = smoke.position.y;
+                ovenGroup.add(smoke);
+            }
+            
+            // Add strong orange light for fire glow
+            const fireLight = new THREE.PointLight(0xff6600, 2, 10);
+            fireLight.position.set(-11, 2, 0);
+            ovenGroup.add(fireLight);
+            
+            // Create raw product input conveyor
+            createRawProductConveyor();
             
             scene.add(ovenGroup);
-            
-            // Store oven group for animation
             window.ovenGroup = ovenGroup;
+        }
+        
+        // Create side conveyor for raw products
+        function createRawProductConveyor() {
+            const conveyorGroup = new THREE.Group();
+            
+            // Narrow conveyor belt
+            const rawConveyorGeometry = new THREE.BoxGeometry(8, 0.3, 1.5);
+            const rawConveyorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x606060,
+                roughness: 0.6,
+                metalness: 0.2
+            });
+            const rawConveyor = new THREE.Mesh(rawConveyorGeometry, rawConveyorMaterial);
+            rawConveyor.position.set(-12, 1, -7);
+            rawConveyor.rotation.y = Math.PI / 2; // 90 degrees
+            conveyorGroup.add(rawConveyor);
+            
+            // Conveyor supports
+            for (let i = 0; i < 3; i++) {
+                const supportGeometry = new THREE.BoxGeometry(0.2, 1, 0.2);
+                const supportMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x404040,
+                    roughness: 0.8
+                });
+                const support = new THREE.Mesh(supportGeometry, supportMaterial);
+                support.position.set(-12, 0.5, -10 + i * 3);
+                conveyorGroup.add(support);
+            }
+            
+            scene.add(conveyorGroup);
+            window.rawConveyor = conveyorGroup;
+            
+            // Start spawning raw products
+            window.rawProducts = [];
+            window.lastRawSpawnTime = 0;
+            setInterval(spawnRawProduct, 3000); // Increased interval
+        }
+        
+        // Spawn raw ceramic products
+        function spawnRawProduct() {
+            if (!gameRunning || isPaused) return;
+            
+            // Check if there's enough space
+            let canSpawn = true;
+            if (window.rawProducts.length > 0) {
+                const lastProduct = window.rawProducts[window.rawProducts.length - 1];
+                if (lastProduct && lastProduct.position.z < -9) {
+                    canSpawn = false; // Too close to spawn point
+                }
+            }
+            
+            if (!canSpawn) return;
+            
+            const types = ['plate', 'cup', 'bowl'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            // Create raw (unfired) product with clay color
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xd2b48c, // Light clay/beige color
+                roughness: 0.9,
+                metalness: 0
+            });
+            
+            let product;
+            if (type === 'plate') {
+                const geometry = new THREE.CylinderGeometry(0.6, 0.5, 0.1, 16);
+                product = new THREE.Mesh(geometry, material);
+                product.rotation.x = Math.PI / 2;
+            } else if (type === 'cup') {
+                product = new THREE.Group();
+                const cupGeometry = new THREE.CylinderGeometry(0.25, 0.2, 0.35, 12);
+                const cup = new THREE.Mesh(cupGeometry, material);
+                product.add(cup);
+                // Handle
+                const handleGeometry = new THREE.TorusGeometry(0.15, 0.03, 8, 16, Math.PI);
+                const handle = new THREE.Mesh(handleGeometry, material);
+                handle.position.set(0.25, 0, 0);
+                handle.rotation.z = -Math.PI / 2;
+                product.add(handle);
+            } else {
+                const geometry = new THREE.SphereGeometry(0.35, 12, 8);
+                product = new THREE.Mesh(geometry, material);
+                product.scale.y = 0.5;
+            }
+            
+            product.position.set(-12, 1.3, -11);
+            product.userData = { 
+                type: type, 
+                onRawConveyor: true,
+                isRaw: true 
+            };
+            
+            scene.add(product);
+            window.rawProducts.push(product);
         }
 
         // Create storage areas along walls
@@ -1083,30 +1273,55 @@
             scene.add(collectionArea);
         }
 
-        // Create wagon track system
+        // Create wagon track system with deep channel
         function createWagonTrack() {
             const trackGroup = new THREE.Group();
             
-            // Create rails perpendicular to conveyor (extended off-screen)
-            const railGeometry = new THREE.BoxGeometry(0.3, 0.2, 60);
+            // Channel walls are created by the floor system now
+            // Just need the side walls for the channel
+            
+            // Create channel walls
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.8
+            });
+            
+            // Left wall
+            const leftWall = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 1.5, 60),
+                wallMaterial
+            );
+            leftWall.position.set(8, -0.75, 0);
+            trackGroup.add(leftWall);
+            
+            // Right wall
+            const rightWall = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 1.5, 60),
+                wallMaterial
+            );
+            rightWall.position.set(14, -0.75, 0);
+            trackGroup.add(rightWall);
+            
+            // Create rails on channel floor
+            const railGeometry = new THREE.BoxGeometry(0.2, 0.15, 60);
             const railMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0x666666,
                 roughness: 0.8,
                 metalness: 0.5 
             });
             
-            // Left rail - positioned at conveyor end
+            // Left rail
             const leftRail = new THREE.Mesh(railGeometry, railMaterial);
-            leftRail.position.set(10, 0.1, 0);
+            leftRail.position.set(9, -1.4, 0);
             trackGroup.add(leftRail);
             
             // Right rail  
             const rightRail = new THREE.Mesh(railGeometry, railMaterial);
-            rightRail.position.set(14, 0.1, 0);
+            rightRail.position.set(13, -1.4, 0);
             trackGroup.add(rightRail);
             
-            // Create sleepers perpendicular to rails
-            const sleeperGeometry = new THREE.BoxGeometry(4.5, 0.15, 0.3);
+            // Create sleepers in channel
+            const sleeperGeometry = new THREE.BoxGeometry(4.5, 0.1, 0.3);
             const sleeperMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0x4a3c28,
                 roughness: 0.9 
@@ -1115,7 +1330,7 @@
             // Create sleepers along the track (extended off-screen)
             for (let i = -30; i <= 30; i += 2) {
                 const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial);
-                sleeper.position.set(12, 0.05, i); // Centered between rails at conveyor end
+                sleeper.position.set(11, -1.35, i); // On the channel floor
                 trackGroup.add(sleeper);
             }
             
@@ -1211,12 +1426,13 @@
         // Spawn a new wagon
         function spawnNewWagon() {
             const wagon = createWagon();
-            wagon.position.set(12, 0, -25); // Start from off-screen bottom, positioned at conveyor end
+            wagon.position.set(11, -1.3, -25); // Start from off-screen, in the deep channel
             wagon.rotation.y = Math.PI / 2; // Rotate 90 degrees
             scene.add(wagon);
             
-            // Animate wagon entering to position at conveyor end
-            const targetZ = 0; // Center position under conveyor end
+            // If there's no current wagon, move to main position
+            // If there's a current wagon, move to waiting position
+            const targetZ = currentWagon ? -8 : 0; // Wait behind if current wagon exists
             const duration = 2000;
             const startTime = Date.now();
             
@@ -1230,7 +1446,11 @@
                 if (progress < 1) {
                     requestAnimationFrame(animateWagonEntry);
                 } else {
-                    currentWagon = wagon;
+                    if (!currentWagon) {
+                        currentWagon = wagon;
+                    } else {
+                        nextWagon = wagon;
+                    }
                 }
             }
             
@@ -1268,7 +1488,30 @@
             
             animateWagonExit();
             
-            // Spawn new wagon with delay
+            // Move next wagon to main position if available
+            if (nextWagon) {
+                currentWagon = nextWagon;
+                nextWagon = null;
+                
+                // Animate next wagon moving to main position
+                const moveStartTime = Date.now();
+                function animateNextWagonMove() {
+                    const elapsed = Date.now() - moveStartTime;
+                    const progress = Math.min(elapsed / 1000, 1);
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    currentWagon.position.z = -8 + (0 - (-8)) * easeProgress;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateNextWagonMove);
+                    }
+                }
+                animateNextWagonMove();
+            } else {
+                currentWagon = null;
+            }
+            
+            // Always spawn a new wagon to maintain queue
             setTimeout(() => {
                 spawnNewWagon();
             }, 500);
@@ -1293,9 +1536,9 @@
         function createBoxes() {
             
             const boxPositions = [
-                { x: -6, z: 5 },
-                { x: 0, z: 5 },
-                { x: 6, z: 5 }
+                { x: -6, z: 3 },  // Close to conveyor
+                { x: 0, z: 3 },   // Center position
+                { x: 6, z: 3 }    // Right side
             ];
 
             boxPositions.forEach((pos, index) => {
@@ -1425,19 +1668,19 @@
                     new THREE.PlaneGeometry(0.8, 0.8),
                     iconMaterial
                 );
-                iconMesh.position.set(0, wallHeight * 0.9, boxType.depth/2 + 0.01); // Higher position
+                iconMesh.position.set(0, wallHeight * 0.7, boxType.depth/2 + 0.01); // Centered on front wall
                 boxGroup.add(iconMesh);
 
-                // Add label below icon
-                const labelGeometry = new THREE.PlaneGeometry(1.8, 0.3);
+                // Add label on the side wall
+                const labelGeometry = new THREE.PlaneGeometry(2.5, 0.4);
                 const labelCanvas = document.createElement('canvas');
                 labelCanvas.width = 256;
                 labelCanvas.height = 48;
                 const ctx = labelCanvas.getContext('2d');
-                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
                 ctx.fillRect(0, 0, 256, 48);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 28px Arial';
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 32px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(boxType.type.toUpperCase() + 'S', 128, 24);
@@ -1445,7 +1688,8 @@
                 const labelTexture = new THREE.CanvasTexture(labelCanvas);
                 const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true });
                 const label = new THREE.Mesh(labelGeometry, labelMaterial);
-                label.position.set(0, wallHeight * 0.5, boxType.depth/2 + 0.01); // Below icon
+                label.position.set(boxType.width/2 + 0.01, wallHeight * 0.7, 0); // On right side wall
+                label.rotation.y = Math.PI / 2; // Rotate to face outward
                 boxGroup.add(label);
 
                 boxGroup.position.set(pos.x, 0, pos.z);
@@ -1939,6 +2183,25 @@
             currentWagon.add(wagonPiece);
             currentWagon.userData.pieces.push(wagonPiece);
             
+            // Check if we need to bring next wagon forward (at 70% capacity)
+            const capacity = currentWagon.userData.pieces.length / currentWagon.userData.maxPieces;
+            if (capacity >= 0.7 && nextWagon && nextWagon.position.z < -5) {
+                // Move next wagon closer
+                const moveStartTime = Date.now();
+                function animateNextWagonApproach() {
+                    const elapsed = Date.now() - moveStartTime;
+                    const progress = Math.min(elapsed / 1500, 1);
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    nextWagon.position.z = -8 + ((-5) - (-8)) * easeProgress;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateNextWagonApproach);
+                    }
+                }
+                animateNextWagonApproach();
+            }
+            
             // Check if wagon is full
             if (currentWagon.userData.pieces.length >= currentWagon.userData.maxPieces) {
                 currentWagon.userData.isFull = true;
@@ -2399,12 +2662,43 @@
                     }
                 });
                 
-                // Animate oven heat particles
+                // Animate oven effects
                 if (window.ovenGroup) {
+                    // Animate smoke rising
                     window.ovenGroup.children.forEach(child => {
-                        if (child.userData.floatOffset !== undefined) {
-                            child.position.y += Math.sin(Date.now() * 0.001 + child.userData.floatOffset) * 0.005;
-                            child.material.opacity = 0.4 + Math.sin(Date.now() * 0.002 + child.userData.floatOffset) * 0.2;
+                        if (child.userData.riseSpeed) {
+                            child.position.y += child.userData.riseSpeed;
+                            if (child.position.y > child.userData.baseY + 3) {
+                                child.position.y = child.userData.baseY;
+                            }
+                            child.material.opacity = 0.3 - (child.position.y - child.userData.baseY) * 0.1;
+                        }
+                    });
+                }
+                
+                // Animate fire
+                if (window.fireGroup) {
+                    window.fireGroup.children.forEach(flame => {
+                        if (flame.userData.animOffset !== undefined) {
+                            flame.position.y = flame.userData.baseY + Math.sin(Date.now() * 0.005 + flame.userData.animOffset) * 0.2;
+                            flame.scale.x = 1 + Math.sin(Date.now() * 0.01 + flame.userData.animOffset) * 0.3;
+                            flame.scale.z = 1 + Math.cos(Date.now() * 0.01 + flame.userData.animOffset) * 0.3;
+                        }
+                    });
+                }
+                
+                // Animate raw products on conveyor
+                if (window.rawProducts) {
+                    window.rawProducts.forEach((product, index) => {
+                        if (product.userData.onRawConveyor) {
+                            product.position.z += 0.02; // Move towards oven
+                            product.rotation.y += 0.02;
+                            
+                            // Remove when enters oven
+                            if (product.position.z > -4) {
+                                scene.remove(product);
+                                window.rawProducts.splice(index, 1);
+                            }
                         }
                     });
                 }
