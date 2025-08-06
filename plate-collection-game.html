@@ -1,0 +1,3010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Plate Collection Factory Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: #0a0a0a;
+            color: #ffffff;
+            user-select: none;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader {
+            width: 100px;
+            height: 100px;
+            border: 3px solid #333;
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 24px;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        /* HUD */
+        #hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 250px;
+        }
+
+        .hud-item {
+            margin: 10px 0;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hud-label {
+            color: #888;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+        }
+
+        .combo {
+            color: #ffaa00;
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Box Indicators */
+        #boxIndicators {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .box-indicator {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .box-name {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .box-fill {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .box-fill-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Controls */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .control-item {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .control-key {
+            color: #00ff88;
+            font-weight: bold;
+            display: inline-block;
+            width: 80px;
+        }
+
+        /* Start Menu */
+        #startMenu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 255, 136, 0.5);
+            backdrop-filter: blur(20px);
+            text-align: center;
+            z-index: 200;
+        }
+
+        #startMenu h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .start-button {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+        }
+
+        /* FPS Counter */
+        #fpsCounter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #00ff88;
+            z-index: 100;
+        }
+
+        /* Pause Overlay */
+        #pauseOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 150;
+        }
+
+        .pause-text {
+            font-size: 48px;
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Achievements */
+        #achievementPopup {
+            position: fixed;
+            top: 100px;
+            right: -400px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 50, 0, 0.9));
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            transition: right 0.5s ease;
+            z-index: 200;
+            min-width: 300px;
+        }
+
+        #achievementPopup.show {
+            right: 20px;
+        }
+
+        .achievement-title {
+            font-size: 24px;
+            color: #00ff88;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+        }
+
+        .achievement-desc {
+            font-size: 16px;
+            color: #aaa;
+        }
+
+        /* Power-ups */
+        .powerup-indicator {
+            position: fixed;
+            top: 150px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 200, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: none;
+        }
+
+        .powerup-active {
+            display: block;
+            animation: powerupPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes powerupPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 200, 0, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(255, 200, 0, 0.8); }
+        }
+
+        /* Speed Warning */
+        #speedWarning {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #ff0000;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            display: none;
+            z-index: 120;
+            animation: warningFlash 0.5s ease-in-out infinite;
+        }
+
+        @keyframes warningFlash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Leaderboard */
+        #leaderboard {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 255, 136, 0.5);
+            z-index: 300;
+            display: none;
+            min-width: 400px;
+        }
+
+        .leaderboard-title {
+            font-size: 32px;
+            color: #00ff88;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .leaderboard-rank {
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .leaderboard-score {
+            color: #00ff88;
+        }
+
+        /* Quality Indicators */
+        .quality-badge {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: #ffaa00;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+
+        /* Particle container */
+        #particleContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Stats Panel */
+        #statsPanel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: none;
+        }
+
+        .stat-item {
+            font-size: 14px;
+            color: #aaa;
+            margin: 5px 0;
+        }
+
+        .stat-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <div class="loader"></div>
+        <div class="loading-text">Loading Factory...</div>
+    </div>
+
+    <div id="startMenu" style="display: none;">
+        <h1>Plate Collection Factory</h1>
+        <div class="subtitle">Collect and package porcelain items before they fall!</div>
+        <button class="start-button" onclick="startGame()">START GAME</button>
+    </div>
+
+    <div id="hud" style="display: none;">
+        <div class="hud-item">
+            <span class="hud-label">Score</span>
+            <span class="hud-value" id="score">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Packed</span>
+            <span class="hud-value" id="packed">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Broken</span>
+            <span class="hud-value" id="broken">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Combo</span>
+            <span class="hud-value combo" id="combo">x1</span>
+        </div>
+    </div>
+
+    <div id="boxIndicators" style="display: none;">
+        <div class="box-indicator">
+            <div class="box-name">PLATES</div>
+            <div id="box1Count">0/12</div>
+            <div class="box-fill">
+                <div class="box-fill-bar" id="box1Fill" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="box-indicator">
+            <div class="box-name">CUPS</div>
+            <div id="box2Count">0/8</div>
+            <div class="box-fill">
+                <div class="box-fill-bar" id="box2Fill" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="box-indicator">
+            <div class="box-name">BOWLS</div>
+            <div id="box3Count">0/6</div>
+            <div class="box-fill">
+                <div class="box-fill-bar" id="box3Fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls" style="display: none;">
+        <div class="control-item"><span class="control-key">Mouse</span> Drag items</div>
+        <div class="control-item"><span class="control-key">Right Click</span> Rotate camera</div>
+        <div class="control-item"><span class="control-key">Scroll</span> Zoom</div>
+        <div class="control-item"><span class="control-key">1, 2, 3</span> Camera views</div>
+        <div class="control-item"><span class="control-key">Space</span> Pause</div>
+        <div class="control-item"><span class="control-key">R</span> Reset</div>
+        <div class="control-item"><span class="control-key">L</span> Leaderboard</div>
+    </div>
+
+    <div id="fpsCounter" style="display: none;">FPS: 60</div>
+
+    <div id="pauseOverlay">
+        <div class="pause-text">PAUSED</div>
+    </div>
+
+    <div id="achievementPopup">
+        <div class="achievement-title" id="achievementTitle">Achievement Unlocked!</div>
+        <div class="achievement-desc" id="achievementDesc">Description</div>
+    </div>
+
+    <div class="powerup-indicator" id="powerupIndicator">
+        <div style="color: #ffaa00; font-weight: bold;">POWER-UP ACTIVE</div>
+        <div id="powerupName" style="color: #fff; margin-top: 5px;">Double Points</div>
+        <div id="powerupTimer" style="color: #aaa; font-size: 12px; margin-top: 5px;">10s</div>
+    </div>
+
+    <div id="speedWarning">SPEED INCREASING!</div>
+
+    <div id="leaderboard">
+        <div class="leaderboard-title">HIGH SCORES</div>
+        <div id="leaderboardContent"></div>
+        <button class="start-button" style="margin-top: 20px; padding: 10px 20px; font-size: 16px;" onclick="closeLeaderboard()">CLOSE</button>
+    </div>
+
+    <div id="statsPanel">
+        <div class="stat-item">Items/Min: <span class="stat-value" id="itemsPerMin">0</span></div>
+        <div class="stat-item">Accuracy: <span class="stat-value" id="accuracy">100%</span></div>
+        <div class="stat-item">Best Combo: <span class="stat-value" id="bestCombo">x1</span></div>
+        <div class="stat-item">Play Time: <span class="stat-value" id="playTime">0:00</span></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="particleContainer"></div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+        // Game variables
+        let scene, camera, renderer, composer;
+        let controls;
+        let conveyor, conveyorSpeed = 0.02;
+        let porcelainItems = [];
+        let boxes = [];
+        let brokenPieces = [];
+        let wagons = [];
+        let currentWagon = null;
+        let wagonTrack = null;
+        let brokenPiecesConveyor = null;
+        let brokenPiecesOnConveyor = [];
+        let raycaster, mouse;
+        let selectedObject = null;
+        let isDragging = false;
+        let dragPlane;
+        let gameRunning = false;
+        let isPaused = false;
+        let score = 0;
+        let packedCount = 0;
+        let brokenCount = 0;
+        let combo = 1;
+        let lastPackTime = 0;
+        let storageAreas = {
+            plate: { x: -30, z: -20, boxes: [], maxStacks: 8, stackHeight: 5 },
+            cup: { x: -30, z: 0, boxes: [], maxStacks: 8, stackHeight: 5 },
+            bowl: { x: -30, z: 20, boxes: [], maxStacks: 8, stackHeight: 5 }
+        };
+
+        // Box types configuration
+        const boxTypes = [
+            { type: 'plate', color: 0xa0522d, iconColor: 0xffffff, maxItems: 12, width: 3, depth: 3, height: 1.0 },
+            { type: 'cup', color: 0x8b4513, iconColor: 0xffffaa, maxItems: 8, width: 4, depth: 3, height: 1.0 },
+            { type: 'bowl', color: 0x654321, iconColor: 0xaaffaa, maxItems: 6, width: 4, depth: 3, height: 1.0 }
+        ];
+
+        // Object pool
+        const objectPool = {
+            plates: [],
+            cups: [],
+            bowls: [],
+            pieces: []
+        };
+
+        // Camera presets
+        const cameraPresets = {
+            1: { position: new THREE.Vector3(0, 15, 0), lookAt: new THREE.Vector3(0, 0, 0) },
+            2: { position: new THREE.Vector3(10, 10, 10), lookAt: new THREE.Vector3(0, 0, 0) },
+            3: { position: new THREE.Vector3(15, 5, 0), lookAt: new THREE.Vector3(0, 0, 0) }
+        };
+
+        // FPS tracking
+        let fps = 60;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+
+        // Audio context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // New game features
+        let powerUpActive = false;
+        let powerUpType = null;
+        let powerUpTimeRemaining = 0;
+        let bestCombo = 1;
+        let totalItemsSpawned = 0;
+        let gameStartTime = 0;
+        let lastSpeedIncrease = 0;
+        let particles = [];
+        
+        // Achievements
+        const achievements = {
+            firstPack: { unlocked: false, title: "First Steps", desc: "Pack your first item" },
+            combo10: { unlocked: false, title: "Combo Master", desc: "Reach 10x combo" },
+            speed100: { unlocked: false, title: "Speed Demon", desc: "Score 100 points" },
+            noBroken50: { unlocked: false, title: "Careful Handler", desc: "Pack 50 items without breaking any" },
+            perfectBox: { unlocked: false, title: "Perfect Packer", desc: "Fill a box completely" },
+            survivor: { unlocked: false, title: "Survivor", desc: "Play for 5 minutes" }
+        };
+
+        // Leaderboard
+        let highScores = JSON.parse(localStorage.getItem('plateGameHighScores') || '[]');
+
+        // Power-up types
+        const powerUpTypes = {
+            doublePoints: { name: "Double Points", duration: 10000, color: 0xffaa00 },
+            slowMotion: { name: "Slow Motion", duration: 8000, color: 0x00aaff },
+            magneticHands: { name: "Magnetic Hands", duration: 12000, color: 0xff00ff },
+            unbreakable: { name: "Unbreakable Items", duration: 15000, color: 0x00ff00 }
+        };
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0xd0d0d0, 35, 70);
+            scene.background = new THREE.Color(0xa0a0a0);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 10, 10);
+
+            // Renderer setup
+            const canvas = document.getElementById('gameCanvas');
+            renderer = new THREE.WebGLRenderer({ 
+                canvas, 
+                antialias: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+
+            // Post-processing
+            composer = new EffectComposer(renderer);
+            const renderPass = new RenderPass(scene, camera);
+            composer.addPass(renderPass);
+
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                0.5, 0.4, 0.85
+            );
+            composer.addPass(bloomPass);
+
+            const fxaaPass = new ShaderPass(FXAAShader);
+            fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+            composer.addPass(fxaaPass);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.2;
+            controls.minDistance = 5;
+            controls.maxDistance = 30;
+            controls.mouseButtons = {
+                LEFT: null,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.ROTATE
+            };
+
+            // Raycaster and mouse
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+            // Setup scene
+            createLighting();
+            createEnvironment();
+            createConveyor();
+            createBoxes();
+            initObjectPool();
+
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('keydown', onKeyDown);
+
+            // Hide loading screen and show start menu
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    document.getElementById('startMenu').style.display = 'block';
+                }, 500);
+            }, 1500);
+        }
+
+        function createLighting() {
+            // Bright ambient light for good visibility
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambientLight);
+
+            // Soft main directional light
+            const keyLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            keyLight.position.set(5, 10, 5);
+            keyLight.castShadow = true;
+            keyLight.shadow.camera.near = 0.1;
+            keyLight.shadow.camera.far = 50;
+            keyLight.shadow.camera.left = -15;
+            keyLight.shadow.camera.right = 15;
+            keyLight.shadow.camera.top = 15;
+            keyLight.shadow.camera.bottom = -15;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            keyLight.shadow.bias = -0.001;
+            scene.add(keyLight);
+
+            // Soft fill light
+            const fillLight = new THREE.DirectionalLight(0xccccff, 0.3);
+            fillLight.position.set(-5, 5, -5);
+            scene.add(fillLight);
+
+            // Hemisphere light for overall brightness
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xbbbbbb, 0.7);
+            hemiLight.position.set(0, 20, 0);
+            scene.add(hemiLight);
+
+            // Work area lights (softer)
+            const boxLight1 = new THREE.PointLight(0xfff8ee, 0.3, 15);
+            boxLight1.position.set(-5, 4, 5);
+            scene.add(boxLight1);
+
+            const boxLight2 = new THREE.PointLight(0xfff8ee, 0.3, 15);
+            boxLight2.position.set(0, 4, 5);
+            scene.add(boxLight2);
+
+            const boxLight3 = new THREE.PointLight(0xfff8ee, 0.3, 15);
+            boxLight3.position.set(5, 4, 5);
+            scene.add(boxLight3);
+        }
+
+        function createEnvironment() {
+            // Floor - bright factory floor
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0xb0b0b0,
+                roughness: 0.3,
+                metalness: 0.1,
+                envMapIntensity: 0.3
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Environment map for reflections
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            const hdriLoader = new THREE.CubeTextureLoader();
+            
+            // Create a simple environment map
+            const envTexture = pmremGenerator.fromScene(new THREE.Scene()).texture;
+            scene.environment = envTexture;
+
+            // Factory background elements
+            createFactoryBackground();
+        }
+
+        function createFactoryBackground() {
+            // Industrial pillars
+            const pillarGeometry = new THREE.CylinderGeometry(0.5, 0.5, 10);
+            const pillarMaterial = new THREE.MeshStandardMaterial({
+                color: 0x808080,
+                roughness: 0.7,
+                metalness: 0.2
+            });
+
+            for (let i = 0; i < 4; i++) {
+                const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+                pillar.position.set(
+                    i % 2 === 0 ? -15 : 20, // Moved right pillars further away from rails
+                    5,
+                    i < 2 ? -15 : 15
+                );
+                pillar.castShadow = true;
+                scene.add(pillar);
+            }
+
+            // Industrial pipes - lighter
+            const pipeGeometry = new THREE.CylinderGeometry(0.2, 0.2, 20);
+            const pipeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                roughness: 0.5,
+                metalness: 0.3
+            });
+
+            const pipe1 = new THREE.Mesh(pipeGeometry, pipeMaterial);
+            pipe1.rotation.z = Math.PI / 2;
+            pipe1.position.set(0, 8, -15);
+            scene.add(pipe1);
+
+            const pipe2 = new THREE.Mesh(pipeGeometry, pipeMaterial);
+            pipe2.rotation.z = Math.PI / 2;
+            pipe2.position.set(0, 8, 15);
+            scene.add(pipe2);
+        }
+
+        function createConveyor() {
+            // Conveyor belt - lighter color
+            const conveyorGeometry = new THREE.BoxGeometry(20, 0.5, 3);
+            const conveyorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x909090,
+                roughness: 0.5,
+                metalness: 0.15,
+                map: createConveyorTexture()
+            });
+            conveyor = new THREE.Mesh(conveyorGeometry, conveyorMaterial);
+            conveyor.position.y = 1;
+            conveyor.castShadow = true;
+            conveyor.receiveShadow = true;
+            scene.add(conveyor);
+
+            // Conveyor sides - lighter metallic
+            const sideGeometry = new THREE.BoxGeometry(20, 0.8, 0.2);
+            const sideMaterial = new THREE.MeshStandardMaterial({
+                color: 0xa0a0a0,
+                roughness: 0.6,
+                metalness: 0.4
+            });
+
+            const leftSide = new THREE.Mesh(sideGeometry, sideMaterial);
+            leftSide.position.set(0, 1.4, -1.6);
+            leftSide.castShadow = true;
+            scene.add(leftSide);
+
+            const rightSide = new THREE.Mesh(sideGeometry, sideMaterial);
+            rightSide.position.set(0, 1.4, 1.6);
+            rightSide.castShadow = true;
+            scene.add(rightSide);
+
+            // Conveyor rollers
+            createConveyorRollers();
+            
+            // Create oven/furnace at conveyor start
+            createOven();
+            
+            // Create storage areas
+            createStorageAreas();
+            
+            // Create broken pieces collection system
+            createBrokenPiecesConveyor();
+            createWagonTrack();
+            spawnNewWagon();
+        }
+
+        function createConveyorTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#909090';
+            ctx.fillRect(0, 0, 512, 128);
+
+            ctx.strokeStyle = '#b0b0b0';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 512; i += 32) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 128);
+                ctx.stroke();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(4, 1);
+            return texture;
+        }
+
+        function createOven() {
+            const ovenGroup = new THREE.Group();
+            
+            // Oven body
+            const ovenGeometry = new THREE.BoxGeometry(4, 4, 4);
+            const ovenMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ovenBody = new THREE.Mesh(ovenGeometry, ovenMaterial);
+            ovenBody.position.set(-12, 2, 0);
+            ovenBody.castShadow = true;
+            ovenBody.receiveShadow = true;
+            ovenGroup.add(ovenBody);
+            
+            // Oven opening (no door, just glowing inside)
+            const openingGeometry = new THREE.BoxGeometry(2.5, 2, 0.1);
+            const openingMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff4400,
+                emissive: 0xff4400,
+                emissiveIntensity: 2
+            });
+            const opening = new THREE.Mesh(openingGeometry, openingMaterial);
+            opening.position.set(-9.95, 2, 0);
+            ovenGroup.add(opening);
+            
+            // Heat particles
+            for (let i = 0; i < 5; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.05);
+                const particleMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xff8800,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                particle.position.set(-10 + Math.random() * 0.5, 2.5 + i * 0.3, (Math.random() - 0.5) * 0.5);
+                particle.userData.floatOffset = Math.random() * Math.PI * 2;
+                ovenGroup.add(particle);
+            }
+            
+            // Chimney
+            const chimneyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2);
+            const chimneyMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.8,
+                metalness: 0.3
+            });
+            const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
+            chimney.position.set(-12, 5, 0);
+            ovenGroup.add(chimney);
+            
+            // Add point light for oven glow
+            const ovenLight = new THREE.PointLight(0xff6600, 1, 8);
+            ovenLight.position.set(-10, 2, 0);
+            ovenGroup.add(ovenLight);
+            
+            scene.add(ovenGroup);
+            
+            // Store oven group for animation
+            window.ovenGroup = ovenGroup;
+        }
+
+        // Create storage areas along walls
+        function createStorageAreas() {
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x444444,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+
+            Object.entries(storageAreas).forEach(([type, area]) => {
+                // Create floor marking for storage area
+                const markingGeometry = new THREE.BoxGeometry(10, 0.1, 15);
+                const marking = new THREE.Mesh(markingGeometry, floorMaterial);
+                marking.position.set(area.x, 0.05, area.z);
+                scene.add(marking);
+
+                // Create label for storage area
+                const labelGeometry = new THREE.BoxGeometry(8, 3, 0.2);
+                const labelMaterial = new THREE.MeshStandardMaterial({ 
+                    color: boxTypes.find(bt => bt.type === type).color 
+                });
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.set(area.x + 5, 5, area.z);
+                scene.add(label);
+
+                // Add text to label
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(type.toUpperCase(), 128, 75);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+                const textGeometry = new THREE.PlaneGeometry(6, 3);
+                const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                textMesh.position.set(area.x + 5.1, 5, area.z);
+                scene.add(textMesh);
+            });
+        }
+
+        function getStoragePosition(type) {
+            const area = storageAreas[type];
+            const stacksPerRow = 4;
+            const currentStack = area.boxes.length;
+            const row = Math.floor(currentStack / (stacksPerRow * area.stackHeight));
+            const col = Math.floor((currentStack % (stacksPerRow * area.stackHeight)) / area.stackHeight);
+            const height = currentStack % area.stackHeight;
+
+            const boxType = boxTypes.find(bt => bt.type === type);
+            
+            return {
+                x: area.x + col * (boxType.width + 0.5),
+                y: height * (boxType.height + 0.1) + boxType.height / 2,
+                z: area.z + (row - 1.5) * (boxType.depth + 0.5)
+            };
+        }
+
+        function createFilledBox(type) {
+            const boxType = boxTypes.find(bt => bt.type === type);
+            const geometry = new THREE.BoxGeometry(boxType.width, boxType.height, boxType.depth);
+            const material = new THREE.MeshStandardMaterial({
+                color: boxType.color,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            const box = new THREE.Mesh(geometry, material);
+            
+            // Add sealed tape effect
+            const tapeGeometry = new THREE.BoxGeometry(boxType.width * 0.8, 0.1, boxType.depth + 0.1);
+            const tapeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x8B7355,
+                roughness: 0.5 
+            });
+            const tape = new THREE.Mesh(tapeGeometry, tapeMaterial);
+            tape.position.y = boxType.height / 2 + 0.05;
+            box.add(tape);
+            
+            // Add label
+            const labelCanvas = document.createElement('canvas');
+            labelCanvas.width = 128;
+            labelCanvas.height = 64;
+            const ctx = labelCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(type.toUpperCase(), 64, 40);
+            
+            const labelTexture = new THREE.CanvasTexture(labelCanvas);
+            const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture });
+            const labelGeometry = new THREE.PlaneGeometry(2, 1);
+            const label = new THREE.Mesh(labelGeometry, labelMaterial);
+            label.position.set(0, boxType.height / 2 + 0.06, boxType.depth / 2 + 0.01);
+            label.rotation.x = -Math.PI / 2;
+            box.add(label);
+            
+            return box;
+        }
+
+        // Create broken pieces collection area (simplified - no extra conveyor)
+        function createBrokenPiecesConveyor() {
+            // Just create a visual indicator where broken pieces will fall
+            const collectionAreaGeometry = new THREE.BoxGeometry(6, 0.1, 4);
+            const collectionAreaMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            
+            const collectionArea = new THREE.Mesh(collectionAreaGeometry, collectionAreaMaterial);
+            collectionArea.position.set(15, 0, 0); // At the end of main conveyor
+            scene.add(collectionArea);
+        }
+
+        // Create wagon track system
+        function createWagonTrack() {
+            const trackGroup = new THREE.Group();
+            
+            // Create rails perpendicular to conveyor (extended off-screen)
+            const railGeometry = new THREE.BoxGeometry(0.3, 0.2, 60);
+            const railMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x666666,
+                roughness: 0.8,
+                metalness: 0.5 
+            });
+            
+            // Left rail - positioned at conveyor end
+            const leftRail = new THREE.Mesh(railGeometry, railMaterial);
+            leftRail.position.set(10, 0.1, 0);
+            trackGroup.add(leftRail);
+            
+            // Right rail  
+            const rightRail = new THREE.Mesh(railGeometry, railMaterial);
+            rightRail.position.set(14, 0.1, 0);
+            trackGroup.add(rightRail);
+            
+            // Create sleepers perpendicular to rails
+            const sleeperGeometry = new THREE.BoxGeometry(4.5, 0.15, 0.3);
+            const sleeperMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4a3c28,
+                roughness: 0.9 
+            });
+            
+            // Create sleepers along the track (extended off-screen)
+            for (let i = -30; i <= 30; i += 2) {
+                const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial);
+                sleeper.position.set(12, 0.05, i); // Centered between rails at conveyor end
+                trackGroup.add(sleeper);
+            }
+            
+            scene.add(trackGroup);
+            wagonTrack = trackGroup;
+        }
+
+        // Create a new wagon
+        function createWagon() {
+            const wagonGroup = new THREE.Group();
+            
+            // Wagon base
+            const baseGeometry = new THREE.BoxGeometry(4, 0.2, 3);
+            const baseMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x8B4513,
+                roughness: 0.7,
+                metalness: 0.1 
+            });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = 0.3; // Lowered from 0.5
+            wagonGroup.add(base);
+            
+            // Wagon walls (lower height)
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x654321,
+                roughness: 0.8 
+            });
+            
+            // Front wall
+            const frontWall = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.8, 3),
+                wallMaterial
+            );
+            frontWall.position.set(-2, 0.7, 0);
+            wagonGroup.add(frontWall);
+            
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.8, 3),
+                wallMaterial
+            );
+            backWall.position.set(2, 0.7, 0);
+            wagonGroup.add(backWall);
+            
+            // Side walls
+            const sideWall1 = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 0.8, 0.1),
+                wallMaterial
+            );
+            sideWall1.position.set(0, 0.7, -1.5);
+            wagonGroup.add(sideWall1);
+            
+            const sideWall2 = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 0.8, 0.1),
+                wallMaterial
+            );
+            sideWall2.position.set(0, 0.7, 1.5);
+            wagonGroup.add(sideWall2);
+            
+            // Wheels
+            const wheelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+            const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                roughness: 0.5,
+                metalness: 0.8 
+            });
+            
+            const wheelPositions = [
+                [-1.5, 0.2, -1.8],
+                [-1.5, 0.2, 1.8],
+                [1.5, 0.2, -1.8],
+                [1.5, 0.2, 1.8]
+            ];
+            
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(...pos);
+                wheel.rotation.z = Math.PI / 2;
+                wagonGroup.add(wheel);
+            });
+            
+            // Add wagon data
+            wagonGroup.userData = {
+                pieces: [],
+                maxPieces: 50,
+                isFull: false,
+                isMoving: false
+            };
+            
+            return wagonGroup;
+        }
+
+        // Spawn a new wagon
+        function spawnNewWagon() {
+            const wagon = createWagon();
+            wagon.position.set(12, 0, -25); // Start from off-screen bottom, positioned at conveyor end
+            wagon.rotation.y = Math.PI / 2; // Rotate 90 degrees
+            scene.add(wagon);
+            
+            // Animate wagon entering to position at conveyor end
+            const targetZ = 0; // Center position under conveyor end
+            const duration = 2000;
+            const startTime = Date.now();
+            
+            function animateWagonEntry() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                wagon.position.z = -25 + (targetZ - (-25)) * easeProgress;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateWagonEntry);
+                } else {
+                    currentWagon = wagon;
+                }
+            }
+            
+            animateWagonEntry();
+            wagons.push(wagon);
+        }
+
+        // Switch to next wagon when current is full
+        function switchWagon() {
+            if (!currentWagon || currentWagon.userData.isMoving) return;
+            
+            currentWagon.userData.isMoving = true;
+            const oldWagon = currentWagon;
+            
+            // Animate old wagon leaving
+            const duration = 2000;
+            const startTime = Date.now();
+            
+            function animateWagonExit() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = Math.pow(progress, 2);
+                
+                oldWagon.position.z = 0 + 25 * easeProgress;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateWagonExit);
+                } else {
+                    // Remove old wagon after it's off-screen
+                    scene.remove(oldWagon);
+                    const index = wagons.indexOf(oldWagon);
+                    if (index > -1) wagons.splice(index, 1);
+                }
+            }
+            
+            animateWagonExit();
+            
+            // Spawn new wagon with delay
+            setTimeout(() => {
+                spawnNewWagon();
+            }, 500);
+        }
+
+        function createConveyorRollers() {
+            const rollerGeometry = new THREE.CylinderGeometry(0.1, 0.1, 3.2);
+            const rollerMaterial = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+
+            for (let i = -9; i <= 9; i += 2) {
+                const roller = new THREE.Mesh(rollerGeometry, rollerMaterial);
+                roller.rotation.x = Math.PI / 2;
+                roller.position.set(i, 0.7, 0);
+                scene.add(roller);
+            }
+        }
+
+        function createBoxes() {
+            
+            const boxPositions = [
+                { x: -6, z: 5 },
+                { x: 0, z: 5 },
+                { x: 6, z: 5 }
+            ];
+
+            boxPositions.forEach((pos, index) => {
+                const boxType = boxTypes[index];
+                const boxGroup = new THREE.Group();
+                
+                // Box - open top design for visibility
+                const boxShape = new THREE.Shape();
+                boxShape.moveTo(-1.5, -1.5);
+                boxShape.lineTo(1.5, -1.5);
+                boxShape.lineTo(1.5, 1.5);
+                boxShape.lineTo(-1.5, 1.5);
+                boxShape.lineTo(-1.5, -1.5);
+                
+                const extrudeSettings = {
+                    depth: 1.5,
+                    bevelEnabled: false
+                };
+                
+                // Box bottom
+                const bottomGeometry = new THREE.BoxGeometry(boxType.width, 0.1, boxType.depth);
+                const bottomMaterial = new THREE.MeshStandardMaterial({
+                    color: boxType.color,
+                    roughness: 0.7,
+                    metalness: 0.1
+                });
+                const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
+                bottom.position.y = 0.05;
+                bottom.castShadow = true;
+                bottom.receiveShadow = true;
+                boxGroup.add(bottom);
+                
+                // Box walls (lower for visibility)
+                const wallThickness = 0.15;
+                const wallHeight = boxType.height;
+                
+                // Front wall (lower)
+                const frontWall = new THREE.Mesh(
+                    new THREE.BoxGeometry(boxType.width, wallHeight * 0.6, wallThickness),
+                    new THREE.MeshStandardMaterial({ color: boxType.color, roughness: 0.7 })
+                );
+                frontWall.position.set(0, wallHeight * 0.3, boxType.depth/2 - wallThickness/2);
+                frontWall.castShadow = true;
+                boxGroup.add(frontWall);
+                
+                // Back wall
+                const backWall = new THREE.Mesh(
+                    new THREE.BoxGeometry(boxType.width, wallHeight, wallThickness),
+                    new THREE.MeshStandardMaterial({ color: boxType.color, roughness: 0.7 })
+                );
+                backWall.position.set(0, wallHeight/2, -boxType.depth/2 + wallThickness/2);
+                backWall.castShadow = true;
+                boxGroup.add(backWall);
+                
+                // Left wall
+                const leftWall = new THREE.Mesh(
+                    new THREE.BoxGeometry(wallThickness, wallHeight, boxType.depth),
+                    new THREE.MeshStandardMaterial({ color: boxType.color, roughness: 0.7 })
+                );
+                leftWall.position.set(-boxType.width/2 + wallThickness/2, wallHeight/2, 0);
+                leftWall.castShadow = true;
+                boxGroup.add(leftWall);
+                
+                // Right wall
+                const rightWall = new THREE.Mesh(
+                    new THREE.BoxGeometry(wallThickness, wallHeight, boxType.depth),
+                    new THREE.MeshStandardMaterial({ color: boxType.color, roughness: 0.7 })
+                );
+                rightWall.position.set(boxType.width/2 - wallThickness/2, wallHeight/2, 0);
+                rightWall.castShadow = true;
+                boxGroup.add(rightWall);
+
+                // Create 2D icon on front wall
+                const iconCanvas = document.createElement('canvas');
+                iconCanvas.width = 128;
+                iconCanvas.height = 128;
+                const iconCtx = iconCanvas.getContext('2d');
+                
+                // Clear background
+                iconCtx.fillStyle = boxType.color.toString(16).padStart(6, '0');
+                iconCtx.fillStyle = '#' + iconCtx.fillStyle;
+                iconCtx.fillRect(0, 0, 128, 128);
+                
+                // Draw icon
+                iconCtx.strokeStyle = '#ffffff';
+                iconCtx.fillStyle = '#ffffff';
+                iconCtx.lineWidth = 4;
+                
+                if (boxType.type === 'plate') {
+                    // Draw plate icon (circle)
+                    iconCtx.beginPath();
+                    iconCtx.arc(64, 64, 40, 0, Math.PI * 2);
+                    iconCtx.stroke();
+                    iconCtx.beginPath();
+                    iconCtx.arc(64, 64, 25, 0, Math.PI * 2);
+                    iconCtx.stroke();
+                } else if (boxType.type === 'cup') {
+                    // Draw cup icon
+                    iconCtx.beginPath();
+                    iconCtx.moveTo(40, 40);
+                    iconCtx.lineTo(45, 80);
+                    iconCtx.lineTo(83, 80);
+                    iconCtx.lineTo(88, 40);
+                    iconCtx.closePath();
+                    iconCtx.stroke();
+                    // Handle
+                    iconCtx.beginPath();
+                    iconCtx.arc(88, 60, 15, -Math.PI/2, Math.PI/2, false);
+                    iconCtx.stroke();
+                } else if (boxType.type === 'bowl') {
+                    // Draw bowl icon
+                    iconCtx.beginPath();
+                    iconCtx.arc(64, 64, 35, 0, Math.PI, false);
+                    iconCtx.closePath();
+                    iconCtx.stroke();
+                    iconCtx.beginPath();
+                    iconCtx.arc(64, 64, 25, 0, Math.PI, false);
+                    iconCtx.stroke();
+                }
+                
+                const iconTexture = new THREE.CanvasTexture(iconCanvas);
+                const iconMaterial = new THREE.MeshBasicMaterial({ 
+                    map: iconTexture,
+                    transparent: true
+                });
+                const iconMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.8, 0.8),
+                    iconMaterial
+                );
+                iconMesh.position.set(0, wallHeight * 0.9, boxType.depth/2 + 0.01); // Higher position
+                boxGroup.add(iconMesh);
+
+                // Add label below icon
+                const labelGeometry = new THREE.PlaneGeometry(1.8, 0.3);
+                const labelCanvas = document.createElement('canvas');
+                labelCanvas.width = 256;
+                labelCanvas.height = 48;
+                const ctx = labelCanvas.getContext('2d');
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillRect(0, 0, 256, 48);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(boxType.type.toUpperCase() + 'S', 128, 24);
+                
+                const labelTexture = new THREE.CanvasTexture(labelCanvas);
+                const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true });
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.set(0, wallHeight * 0.5, boxType.depth/2 + 0.01); // Below icon
+                boxGroup.add(label);
+
+                boxGroup.position.set(pos.x, 0, pos.z);
+                boxGroup.userData = {
+                    items: [],
+                    maxItems: boxType.maxItems,
+                    index: index,
+                    acceptedType: boxType.type
+                };
+                
+                scene.add(boxGroup);
+                boxes.push(boxGroup);
+            });
+        }
+
+        function initObjectPool() {
+            // Pre-create objects for better performance
+            const porcelainMaterial = createPorcelainMaterial();
+            
+            // Create plates
+            for (let i = 0; i < 20; i++) {
+                const plate = createPlate(porcelainMaterial);
+                plate.visible = false;
+                scene.add(plate);
+                objectPool.plates.push(plate);
+            }
+
+            // Create cups
+            for (let i = 0; i < 20; i++) {
+                const cup = createCup(porcelainMaterial);
+                cup.visible = false;
+                scene.add(cup);
+                objectPool.cups.push(cup);
+            }
+
+            // Create bowls
+            for (let i = 0; i < 20; i++) {
+                const bowl = createBowl(porcelainMaterial);
+                bowl.visible = false;
+                scene.add(bowl);
+                objectPool.bowls.push(bowl);
+            }
+
+            // Create broken pieces
+            for (let i = 0; i < 100; i++) {
+                const piece = createBrokenPiece();
+                piece.visible = false;
+                scene.add(piece);
+                objectPool.pieces.push(piece);
+            }
+        }
+
+        function createPorcelainMaterial() {
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0,
+                clearcoat: 1,
+                clearcoatRoughness: 0.1,
+                reflectivity: 0.9,
+                envMapIntensity: 1,
+                side: THREE.DoubleSide
+            });
+            return material;
+        }
+
+        function createPlate(material) {
+            const geometry = new THREE.CylinderGeometry(1, 0.8, 0.2, 32);
+            const plate = new THREE.Mesh(geometry, material.clone());
+            plate.castShadow = true;
+            plate.receiveShadow = true;
+            plate.userData.type = 'plate';
+            plate.userData.points = 10;
+            plate.userData.quality = 'normal';
+            plate.userData.isPowerUp = false;
+            return plate;
+        }
+
+        function createCup(material) {
+            const cupGroup = new THREE.Group();
+            
+            // Cup body
+            const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.3, 0.8, 32);
+            const body = new THREE.Mesh(bodyGeometry, material.clone());
+            cupGroup.add(body);
+
+            // Handle
+            const handleGeometry = new THREE.TorusGeometry(0.3, 0.05, 8, 16, Math.PI);
+            const handle = new THREE.Mesh(handleGeometry, material.clone());
+            handle.position.set(0.4, 0, 0);
+            handle.rotation.z = -Math.PI / 2;
+            cupGroup.add(handle);
+
+            cupGroup.castShadow = true;
+            cupGroup.receiveShadow = true;
+            cupGroup.userData.type = 'cup';
+            cupGroup.userData.points = 15;
+            cupGroup.userData.quality = 'normal';
+            cupGroup.userData.isPowerUp = false;
+            return cupGroup;
+        }
+
+        function createBowl(material) {
+            const geometry = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const bowl = new THREE.Mesh(geometry, material.clone());
+            bowl.castShadow = true;
+            bowl.receiveShadow = true;
+            bowl.userData.type = 'bowl';
+            bowl.userData.points = 20;
+            bowl.userData.quality = 'normal';
+            bowl.userData.isPowerUp = false;
+            return bowl;
+        }
+
+        function createBrokenPiece() {
+            const geometry = new THREE.TetrahedronGeometry(0.2);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.3,
+                metalness: 0
+            });
+            const piece = new THREE.Mesh(geometry, material);
+            piece.castShadow = true;
+            piece.userData.velocity = new THREE.Vector3();
+            return piece;
+        }
+
+        function spawnItem() {
+            if (!gameRunning || isPaused) return;
+
+            totalItemsSpawned++;
+            
+            // Check for power-up spawn (5% chance)
+            const isPowerUp = Math.random() < 0.05;
+            
+            const types = ['plate', 'cup', 'bowl'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            let item;
+
+            switch (type) {
+                case 'plate':
+                    item = objectPool.plates.find(p => !p.visible);
+                    break;
+                case 'cup':
+                    item = objectPool.cups.find(c => !c.visible);
+                    break;
+                case 'bowl':
+                    item = objectPool.bowls.find(b => !b.visible);
+                    break;
+            }
+
+            if (item) {
+                // Check if spawn position is clear
+                let spawnX = -10;
+                let spawnZ = (Math.random() - 0.5) * 1.2; // Reduced from 2 to stay within belt
+                let spawnClear = false;
+                let attempts = 0;
+                
+                while (!spawnClear && attempts < 10) {
+                    spawnClear = true;
+                    
+                    // Check distance from all other items on conveyor
+                    for (let otherItem of porcelainItems) {
+                        if (otherItem.visible && otherItem.userData.onConveyor) {
+                            const distance = Math.sqrt(
+                                Math.pow(otherItem.position.x - spawnX, 2) + 
+                                Math.pow(otherItem.position.z - spawnZ, 2)
+                            );
+                            
+                            // Minimum distance based on item types
+                            const minDistance = 1.7; // Balanced space between items
+                            
+                            if (distance < minDistance) {
+                                spawnClear = false;
+                                // Try a different position
+                                spawnX = -10 - (Math.random() * 2); // Spawn slightly further back
+                                spawnZ = (Math.random() - 0.5) * 1.2; // Keep within belt
+                                break;
+                            }
+                        }
+                    }
+                    attempts++;
+                }
+                
+                // If we couldn't find a clear spot, don't spawn
+                if (!spawnClear) {
+                    return;
+                }
+                
+                item.visible = true;
+                item.position.set(spawnX, 1.5, spawnZ);
+                item.rotation.set(0, Math.random() * Math.PI * 2, 0);
+                
+                // Set quality and appearance
+                if (isPowerUp) {
+                    // Power-up item
+                    item.userData.isPowerUp = true;
+                    const powerUpKeys = Object.keys(powerUpTypes);
+                    const randomPowerUp = powerUpKeys[Math.floor(Math.random() * powerUpKeys.length)];
+                    item.userData.powerUpType = randomPowerUp;
+                    
+                    // Golden glow for power-ups
+                    if (item.material) {
+                        item.material.color.setHex(0xffd700);
+                        item.material.emissive = new THREE.Color(0xffd700);
+                        item.material.emissiveIntensity = 0.3;
+                    } else if (item.children) {
+                        item.children.forEach(child => {
+                            if (child.material) {
+                                child.material.color.setHex(0xffd700);
+                                child.material.emissive = new THREE.Color(0xffd700);
+                                child.material.emissiveIntensity = 0.3;
+                            }
+                        });
+                    }
+                } else {
+                    // Regular item with quality variations
+                    item.userData.isPowerUp = false;
+                    const qualityRoll = Math.random();
+                    
+                    if (qualityRoll < 0.1) {
+                        // Premium quality (10%)
+                        item.userData.quality = 'premium';
+                        item.userData.points = Math.floor(item.userData.points * 2);
+                        
+                        const premiumColors = [0xf0f0ff, 0xfff0f0, 0xf0fff0];
+                        const color = premiumColors[Math.floor(Math.random() * premiumColors.length)];
+                        
+                        if (item.material) {
+                            item.material.color.setHex(color);
+                            item.material.metalness = 0.3;
+                            item.material.roughness = 0.1;
+                        } else if (item.children) {
+                            item.children.forEach(child => {
+                                if (child.material) {
+                                    child.material.color.setHex(color);
+                                    child.material.metalness = 0.3;
+                                    child.material.roughness = 0.1;
+                                }
+                            });
+                        }
+                    } else if (qualityRoll < 0.25) {
+                        // Damaged quality (15%)
+                        item.userData.quality = 'damaged';
+                        item.userData.points = Math.floor(item.userData.points * 0.5);
+                        
+                        if (item.material) {
+                            item.material.color.setHex(0xcccccc);
+                            item.material.roughness = 0.8;
+                        } else if (item.children) {
+                            item.children.forEach(child => {
+                                if (child.material) {
+                                    child.material.color.setHex(0xcccccc);
+                                    child.material.roughness = 0.8;
+                                }
+                            });
+                        }
+                    } else {
+                        // Normal quality (75%)
+                        item.userData.quality = 'normal';
+                        const colors = [0xffffff, 0xe6f2ff, 0xfff5e6, 0xffe6e6, 0xe6ffe6];
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+                        
+                        if (item.material) {
+                            item.material.color.setHex(color);
+                            item.material.metalness = 0;
+                            item.material.roughness = 0.1;
+                        } else if (item.children) {
+                            item.children.forEach(child => {
+                                if (child.material) {
+                                    child.material.color.setHex(color);
+                                    child.material.metalness = 0;
+                                    child.material.roughness = 0.1;
+                                }
+                            });
+                        }
+                    }
+                }
+
+                item.userData.onConveyor = true;
+                item.userData.dragging = false;
+                porcelainItems.push(item);
+            }
+        }
+
+        function updateConveyor() {
+            if (!gameRunning || isPaused) return;
+
+            // Move conveyor texture (negative for correct direction)
+            if (conveyor.material.map) {
+                conveyor.material.map.offset.x -= conveyorSpeed;
+            }
+
+            // Sort items by X position for collision checking
+            const conveyorItems = porcelainItems.filter(item => 
+                item.userData.onConveyor && !item.userData.dragging && !item.userData.returning && item.visible
+            ).sort((a, b) => a.position.x - b.position.x);
+
+            // Move items on conveyor with collision detection
+            conveyorItems.forEach((item, index) => {
+                let targetX = item.position.x + conveyorSpeed;
+                let canMove = true;
+
+                // Check collision with items ahead
+                for (let i = index + 1; i < conveyorItems.length; i++) {
+                    const otherItem = conveyorItems[i];
+                    const distance = Math.sqrt(
+                        Math.pow(otherItem.position.x - targetX, 2) + 
+                        Math.pow(otherItem.position.z - item.position.z, 2)
+                    );
+                    
+                    // Minimum distance based on item sizes
+                    const minDistance = 1.4;
+                    
+                    if (distance < minDistance && otherItem.position.x > item.position.x) {
+                        // Block movement if too close
+                        canMove = false;
+                        targetX = otherItem.position.x - minDistance;
+                        break;
+                    }
+                }
+
+                if (canMove) {
+                    item.position.x = targetX;
+                } else {
+                    // If blocked, move as close as possible
+                    item.position.x = Math.min(targetX, item.position.x + conveyorSpeed * 0.1);
+                }
+
+                // Check if item reached the end - start falling
+                // Start falling exactly at conveyor end (conveyor is 20 units, centered at 0)
+                if (item.position.x >= 9.5 && !item.userData.falling) {
+                    item.userData.falling = true;
+                    item.userData.onConveyor = false;
+                    item.userData.fallVelocity = 0;
+                    // Give slight forward momentum to fall into wagon
+                    item.userData.fallVelocityX = conveyorSpeed * 0.5;
+                }
+            });
+
+            // Update falling items
+            porcelainItems.forEach((item, index) => {
+                if (item.userData.falling) {
+                    // Apply gravity
+                    item.userData.fallVelocity += 0.03; // Gravity acceleration
+                    item.position.y -= item.userData.fallVelocity;
+                    
+                    // Continue forward movement if item has forward velocity
+                    if (item.userData.fallVelocityX) {
+                        item.position.x += item.userData.fallVelocityX;
+                        // Gradually reduce forward velocity due to air resistance
+                        item.userData.fallVelocityX *= 0.98;
+                    }
+                    
+                    // Rotate while falling
+                    item.rotation.x += 0.1;
+                    item.rotation.z += 0.05;
+                    
+                    // Check if hit the ground
+                    if (item.position.y <= 0) {
+                        // Only break if item is past the oven area (safety check)
+                        if (item.position.x > -8) {
+                            breakItem(item);
+                            porcelainItems.splice(index, 1);
+                        } else {
+                            // Reset if still in oven area
+                            item.position.y = 1.5;
+                            item.userData.falling = false;
+                            item.userData.onConveyor = true;
+                            item.userData.fallVelocity = 0;
+                        }
+                    }
+                }
+            });
+
+            // Update broken pieces
+            updateBrokenPieces();
+        }
+
+        function breakItem(item) {
+            // Check if unbreakable power-up is active
+            if (powerUpActive && powerUpType === 'unbreakable') {
+                // Item bounces back instead of breaking
+                item.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                );
+                return;
+            }
+            
+            playBreakSound();
+            
+            // Create particle effect
+            createBreakParticles(item.position);
+            
+            // Create broken pieces
+            for (let i = 0; i < 8; i++) {
+                const piece = objectPool.pieces.find(p => !p.visible);
+                if (piece) {
+                    piece.visible = true;
+                    piece.position.copy(item.position);
+                    piece.userData.velocity.set(
+                        (Math.random() - 0.5) * 0.3,
+                        Math.random() * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    );
+                    brokenPieces.push(piece);
+                }
+            }
+
+            // Hide original item
+            item.visible = false;
+            item.userData.onConveyor = false;
+
+            // Update score
+            brokenCount++;
+            score -= 20;
+            combo = 1;
+            updateHUD();
+            updateStats();
+        }
+
+        function updateBrokenPieces() {
+            brokenPieces.forEach((piece, index) => {
+                piece.position.add(piece.userData.velocity);
+                piece.userData.velocity.y -= 0.01; // Gravity
+                piece.rotation.x += 0.1;
+                piece.rotation.y += 0.1;
+                
+                // Check if piece should go into wagon (lowered height)
+                if (piece.position.y <= 0.5 && currentWagon && !currentWagon.userData.isFull) {
+                    // Check if piece is above wagon (wagon is rotated 90 degrees)
+                    // Make bounds wider to catch pieces falling from conveyor
+                    const wagonBounds = {
+                        minX: currentWagon.position.x - 3,
+                        maxX: currentWagon.position.x + 3,
+                        minZ: currentWagon.position.z - 2.5,
+                        maxZ: currentWagon.position.z + 2.5
+                    };
+                    
+                    if (piece.position.x >= wagonBounds.minX && 
+                        piece.position.x <= wagonBounds.maxX &&
+                        piece.position.z >= wagonBounds.minZ && 
+                        piece.position.z <= wagonBounds.maxZ) {
+                        
+                        // Add piece to wagon
+                        addPieceToWagon(piece);
+                        piece.visible = false;
+                        brokenPieces.splice(index, 1);
+                        return;
+                    }
+                }
+
+                // Remove pieces that fall too far
+                if (piece.position.y < -5) {
+                    piece.visible = false;
+                    brokenPieces.splice(index, 1);
+                }
+            });
+        }
+        
+        // Add broken piece to wagon
+        function addPieceToWagon(piece) {
+            if (!currentWagon || currentWagon.userData.isFull) return;
+            
+            // Create a small cube to represent the piece in the wagon
+            const pieceGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const pieceMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xcccccc,
+                roughness: 0.9 
+            });
+            const wagonPiece = new THREE.Mesh(pieceGeometry, pieceMaterial);
+            
+            // Position randomly in wagon
+            const pieceCount = currentWagon.userData.pieces.length;
+            const layer = Math.floor(pieceCount / 20);
+            const posInLayer = pieceCount % 20;
+            
+            wagonPiece.position.set(
+                (Math.random() - 0.5) * 3,
+                0.4 + layer * 0.15, // Lowered starting height
+                (Math.random() - 0.5) * 2
+            );
+            wagonPiece.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            
+            currentWagon.add(wagonPiece);
+            currentWagon.userData.pieces.push(wagonPiece);
+            
+            // Check if wagon is full
+            if (currentWagon.userData.pieces.length >= currentWagon.userData.maxPieces) {
+                currentWagon.userData.isFull = true;
+                
+                // Add "FULL" sign
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, 128, 64);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 32px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('FULL', 64, 45);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const signMaterial = new THREE.MeshBasicMaterial({ map: texture });
+                const signGeometry = new THREE.PlaneGeometry(1, 0.5);
+                const sign = new THREE.Mesh(signGeometry, signMaterial);
+                sign.position.set(0, 1.5, 0); // Lowered sign position
+                currentWagon.add(sign);
+                
+                // Switch to new wagon after a delay
+                setTimeout(() => {
+                    switchWagon();
+                }, 1000);
+            }
+        }
+
+        function onMouseDown(event) {
+            if (!gameRunning || isPaused) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(porcelainItems, true);
+
+            if (intersects.length > 0 && event.button === 0) {
+                controls.enabled = false;
+                let selected = intersects[0].object;
+                // Find the top-level object (plate, cup, or bowl)
+                while (selected.parent && !selected.userData.type) {
+                    selected = selected.parent;
+                }
+                selectedObject = selected;
+                selectedObject.userData.dragging = true;
+                selectedObject.userData.onConveyor = false;
+                isDragging = true;
+
+                // Set drag plane at object height
+                dragPlane.setFromNormalAndCoplanarPoint(
+                    camera.getWorldDirection(new THREE.Vector3()).normalize(),
+                    selectedObject.position
+                );
+            }
+        }
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isDragging && selectedObject) {
+                raycaster.setFromCamera(mouse, camera);
+                const intersectPoint = new THREE.Vector3();
+                raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+                selectedObject.position.copy(intersectPoint);
+                selectedObject.position.y = 2;
+                
+                // Check which box we're hovering over
+                updateBoxHighlight(selectedObject);
+            } else {
+                // Hover effect
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(porcelainItems, true);
+                
+                document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            }
+        }
+
+        function onMouseUp(event) {
+            if (isDragging && selectedObject) {
+                controls.enabled = true;
+                isDragging = false;
+
+                // Check if dropped in a box
+                let droppedInBox = false;
+                boxes.forEach(box => {
+                    const distance = selectedObject.position.distanceTo(box.position);
+                    if (distance < 3 && box.userData.items.length < box.userData.maxItems && !droppedInBox) {
+                        // Check if it's a power-up
+                        if (selectedObject.userData.isPowerUp) {
+                            activatePowerUp(selectedObject.userData.powerUpType);
+                            selectedObject.visible = false;
+                            const index = porcelainItems.indexOf(selectedObject);
+                            if (index > -1) porcelainItems.splice(index, 1);
+                            droppedInBox = true;
+                            selectedObject.userData.dragging = false;
+                            selectedObject = null;
+                            return;
+                        }
+                        
+                        // Check if item type matches box type
+                        if (selectedObject.userData.type !== box.userData.acceptedType) {
+                            // Wrong type - reject with visual feedback
+                            playRejectSound();
+                            showWrongTypeWarning(selectedObject.userData.type, box.userData.acceptedType);
+                            
+                            // Return item to conveyor start
+                            returnItemToConveyorStart(selectedObject);
+                            droppedInBox = true; // Prevent further processing
+                            return;
+                        }
+                        
+                        // Add to box with proper stacking based on item type
+                        box.userData.items.push(selectedObject);
+                        
+                        if (selectedObject.userData.type === 'cup') {
+                            // Cups: Arrange in 3-2-3 pattern (8 total)
+                            const cupIndex = box.userData.items.filter(item => item.userData.type === 'cup').length - 1;
+                            let row, col;
+                            
+                            if (cupIndex < 3) {
+                                // First row: 3 cups
+                                row = 0;
+                                col = cupIndex;
+                            } else if (cupIndex < 5) {
+                                // Second row: 2 cups
+                                row = 1;
+                                col = cupIndex - 3;
+                            } else {
+                                // Third row: 3 cups
+                                row = 2;
+                                col = cupIndex - 5;
+                            }
+                            
+                            const cupSpacing = 1.1;
+                            const rowSpacing = 1.0;
+                            const xOffset = row === 1 ? cupSpacing * 0.5 : 0; // Center middle row
+                            
+                            selectedObject.position.set(
+                                box.position.x + (col - 1) * cupSpacing + xOffset,
+                                0.5, // Cups on bottom
+                                box.position.z + (row - 1) * rowSpacing
+                            );
+                            selectedObject.rotation.y = 0; // Keep cups aligned
+                            
+                        } else if (selectedObject.userData.type === 'bowl') {
+                            // Bowls: 3x2 arrangement ONLY
+                            const bowlIndex = box.userData.items.filter(item => item.userData.type === 'bowl').length - 1;
+                            
+                            if (bowlIndex < 6) {
+                                // 3x2 arrangement
+                                const row = Math.floor(bowlIndex / 3);
+                                const col = bowlIndex % 3;
+                                
+                                selectedObject.position.set(
+                                    box.position.x + (col - 1) * 1.2,
+                                    0.4,
+                                    box.position.z + (row - 0.5) * 1.0
+                                );
+                                selectedObject.rotation.y = 0; // Keep bowls aligned
+                            } else {
+                                // Box is full for bowls - reject
+                                playRejectSound();
+                                showWrongTypeWarning('Too many bowls', 'Maximum 6');
+                                returnItemToConveyorStart(selectedObject);
+                                droppedInBox = true;
+                                return;
+                            }
+                            
+                        } else {
+                            // Plates: Stack vertically
+                            const plateItems = box.userData.items.filter(item => item.userData.type === 'plate');
+                            const itemHeight = getItemHeight(selectedObject.userData.type);
+                            let stackY = 0.2;
+                            
+                            // Calculate height from previous plates
+                            for (let i = 0; i < plateItems.length - 1; i++) {
+                                stackY += itemHeight;
+                            }
+                            
+                            selectedObject.position.set(
+                                box.position.x + (Math.random() - 0.5) * 0.2,
+                                stackY + itemHeight / 2,
+                                box.position.z + (Math.random() - 0.5) * 0.2
+                            );
+                            
+                            // Slight rotation for natural stack
+                            selectedObject.rotation.y = Math.random() * 0.2 - 0.1;
+                        }
+                        
+                        // Update score based on quality and power-ups
+                        const now = Date.now();
+                        if (now - lastPackTime < 2000) {
+                            combo = Math.min(combo + 0.5, 5);
+                        } else {
+                            combo = 1;
+                        }
+                        lastPackTime = now;
+
+                        // Update best combo
+                        if (combo > bestCombo) {
+                            bestCombo = combo;
+                        }
+
+                        let points = selectedObject.userData.points * combo;
+                        if (powerUpActive && powerUpType === 'doublePoints') {
+                            points *= 2;
+                        }
+
+                        score += Math.floor(points);
+                        packedCount++;
+                        droppedInBox = true;
+                        
+                        // Create success particles
+                        createSuccessParticles(selectedObject.position);
+                        
+                        playPackSound();
+                        updateHUD();
+                        updateStats();
+                        updateBoxIndicators();
+                        checkAchievements();
+
+                        // Remove from porcelain items
+                        const index = porcelainItems.indexOf(selectedObject);
+                        if (index > -1) porcelainItems.splice(index, 1);
+
+                        // Check if box is full
+                        if (box.userData.items.length >= box.userData.maxItems) {
+                            unlockAchievement('perfectBox');
+                            setTimeout(() => replaceBox(box), 500);
+                        }
+                    }
+                });
+
+                if (!droppedInBox && selectedObject) {
+                    // Smoothly return to nearest available position on conveyor
+                    returnToNearestConveyorPosition(selectedObject);
+                }
+
+                if (selectedObject) {
+                    selectedObject.userData.dragging = false;
+                    selectedObject = null;
+                }
+                
+                // Clear box highlights after dropping
+                clearBoxHighlights();
+            }
+        }
+
+        function replaceBox(box) {
+            // Store box to wall storage area
+            const boxType = box.userData.acceptedType;
+            
+            // Create a filled box copy
+            const filledBox = createFilledBox(boxType);
+            const targetPos = getStoragePosition(boxType);
+            
+            // Add to scene and storage
+            filledBox.position.copy(box.position);
+            scene.add(filledBox);
+            
+            // Animate to storage
+            const startPos = box.position.clone();
+            const duration = 1500;
+            const startTime = Date.now();
+            
+            function animateToStorage() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                filledBox.position.lerpVectors(startPos, targetPos, easeProgress);
+                filledBox.rotation.y = Math.PI * 2 * progress; // Spin during transport
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateToStorage);
+                } else {
+                    // Box is now in storage
+                    storageAreas[boxType].boxes.push(filledBox);
+                }
+            }
+            
+            animateToStorage();
+            
+            // Clear original box
+            box.userData.items.forEach(item => {
+                item.visible = false;
+            });
+            box.userData.items = [];
+            updateBoxIndicators();
+        }
+
+        function onKeyDown(event) {
+            switch (event.key) {
+                case ' ':
+                    togglePause();
+                    break;
+                case 'r':
+                case 'R':
+                    if (confirm('Reset the game?')) {
+                        resetGame();
+                    }
+                    break;
+                case 'l':
+                case 'L':
+                    if (!gameRunning || isPaused) {
+                        showLeaderboard();
+                    }
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                    setCameraPreset(event.key);
+                    break;
+                case 'Escape':
+                    closeLeaderboard();
+                    break;
+            }
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            isPaused = !isPaused;
+            document.getElementById('pauseOverlay').style.display = isPaused ? 'flex' : 'none';
+        }
+
+        function setCameraPreset(key) {
+            const preset = cameraPresets[key];
+            if (preset) {
+                const startPos = camera.position.clone();
+                const endPos = preset.position.clone();
+                const duration = 1000;
+                const startTime = Date.now();
+
+                function animateCamera() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    camera.position.lerpVectors(startPos, endPos, easeProgress);
+                    camera.lookAt(preset.lookAt);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateCamera);
+                    }
+                }
+                
+                animateCamera();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('packed').textContent = packedCount;
+            document.getElementById('broken').textContent = brokenCount;
+            document.getElementById('combo').textContent = `x${combo.toFixed(1)}`;
+        }
+
+        function updateBoxIndicators() {
+            boxes.forEach((box, index) => {
+                const count = box.userData.items.length;
+                const max = box.userData.maxItems;
+                const percentage = (count / max) * 100;
+                
+                document.getElementById(`box${index + 1}Count`).textContent = `${count}/${max}`;
+                document.getElementById(`box${index + 1}Fill`).style.width = `${percentage}%`;
+            });
+        }
+
+        function updateFPS(deltaTime) {
+            frameCount++;
+            
+            if (Date.now() - lastFpsUpdate > 500) {
+                fps = Math.round(frameCount * 2);
+                frameCount = 0;
+                lastFpsUpdate = Date.now();
+                document.getElementById('fpsCounter').textContent = `FPS: ${fps}`;
+            }
+        }
+
+        function playBreakSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(2000, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function playPackSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = 0.016; // Assume 60fps
+            
+            if (gameRunning && !isPaused) {
+                updateConveyor();
+                updatePowerUp(deltaTime);
+                
+                // Spawn new items with controlled frequency
+                if (Math.random() < 0.04) { // Increased spawn rate
+                    spawnItem();
+                }
+                
+                // Increase difficulty over time and show warning
+                const currentLevel = Math.floor(score / 100);
+                if (currentLevel > lastSpeedIncrease && conveyorSpeed < 0.05) {
+                    conveyorSpeed = Math.min(conveyorSpeed + 0.005, 0.05);
+                    lastSpeedIncrease = currentLevel;
+                    showSpeedWarning();
+                }
+                
+                // Update stats periodically
+                if (Date.now() % 1000 < 16) {
+                    updateStats();
+                    checkAchievements();
+                }
+                
+                // Rotate power-up items
+                porcelainItems.forEach(item => {
+                    if (item.userData.isPowerUp && item.visible) {
+                        item.rotation.y += 0.05;
+                    }
+                });
+                
+                // Animate oven heat particles
+                if (window.ovenGroup) {
+                    window.ovenGroup.children.forEach(child => {
+                        if (child.userData.floatOffset !== undefined) {
+                            child.position.y += Math.sin(Date.now() * 0.001 + child.userData.floatOffset) * 0.005;
+                            child.material.opacity = 0.4 + Math.sin(Date.now() * 0.002 + child.userData.floatOffset) * 0.2;
+                        }
+                    });
+                }
+                
+                // Animate wagon wheels
+                wagons.forEach(wagon => {
+                    if (wagon.userData.isMoving) {
+                        // Rotate wheels when wagon is moving
+                        wagon.children.forEach(child => {
+                            if (child.geometry && child.geometry.type === 'CylinderGeometry') {
+                                child.rotation.x += 0.1;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            controls.update();
+            updateFPS(deltaTime);
+            
+            composer.render();
+        }
+
+        // New feature functions
+        function createBreakParticles(position) {
+            const particleCount = 20;
+            const container = document.getElementById('particleContainer');
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '4px';
+                particle.style.height = '4px';
+                particle.style.backgroundColor = '#ffffff';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                
+                // Convert 3D position to screen coordinates
+                const vector = position.clone();
+                vector.project(camera);
+                
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+                
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                
+                container.appendChild(particle);
+                
+                // Animate particle
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 200 + 100;
+                const duration = Math.random() * 1000 + 500;
+                
+                particle.animate([
+                    { 
+                        transform: 'translate(0, 0) scale(1)',
+                        opacity: 1
+                    },
+                    {
+                        transform: `translate(${Math.cos(angle) * speed}px, ${Math.sin(angle) * speed + 100}px) scale(0)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: duration,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        function createSuccessParticles(position) {
+            const particleCount = 15;
+            const container = document.getElementById('particleContainer');
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                particle.style.backgroundColor = '#00ff88';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.boxShadow = '0 0 10px #00ff88';
+                
+                // Convert 3D position to screen coordinates
+                const vector = position.clone();
+                vector.project(camera);
+                
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+                
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                
+                container.appendChild(particle);
+                
+                // Animate particle
+                const angle = (i / particleCount) * Math.PI * 2;
+                const speed = 50;
+                
+                particle.animate([
+                    { 
+                        transform: 'translate(0, 0) scale(1)',
+                        opacity: 1
+                    },
+                    {
+                        transform: `translate(${Math.cos(angle) * speed}px, ${Math.sin(angle) * speed}px) scale(0)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: 800,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        function activatePowerUp(type) {
+            powerUpActive = true;
+            powerUpType = type;
+            powerUpTimeRemaining = powerUpTypes[type].duration;
+            
+            document.getElementById('powerupIndicator').classList.add('powerup-active');
+            document.getElementById('powerupName').textContent = powerUpTypes[type].name;
+            
+            playPowerUpSound();
+            
+            // Apply power-up effects
+            switch (type) {
+                case 'slowMotion':
+                    conveyorSpeed *= 0.5;
+                    break;
+                case 'magneticHands':
+                    // Implemented in drag logic
+                    break;
+            }
+        }
+
+        function updatePowerUp(deltaTime) {
+            if (powerUpActive) {
+                powerUpTimeRemaining -= deltaTime * 1000;
+                
+                const seconds = Math.ceil(powerUpTimeRemaining / 1000);
+                document.getElementById('powerupTimer').textContent = `${seconds}s`;
+                
+                if (powerUpTimeRemaining <= 0) {
+                    deactivatePowerUp();
+                }
+            }
+        }
+
+        function deactivatePowerUp() {
+            powerUpActive = false;
+            document.getElementById('powerupIndicator').classList.remove('powerup-active');
+            
+            // Remove power-up effects
+            switch (powerUpType) {
+                case 'slowMotion':
+                    conveyorSpeed *= 2;
+                    break;
+            }
+            
+            powerUpType = null;
+        }
+
+        function unlockAchievement(achievementKey) {
+            if (!achievements[achievementKey].unlocked) {
+                achievements[achievementKey].unlocked = true;
+                
+                const popup = document.getElementById('achievementPopup');
+                document.getElementById('achievementTitle').textContent = achievements[achievementKey].title;
+                document.getElementById('achievementDesc').textContent = achievements[achievementKey].desc;
+                
+                popup.classList.add('show');
+                playAchievementSound();
+                
+                setTimeout(() => {
+                    popup.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        function checkAchievements() {
+            // First pack
+            if (packedCount === 1) {
+                unlockAchievement('firstPack');
+            }
+            
+            // Combo master
+            if (combo >= 10) {
+                unlockAchievement('combo10');
+            }
+            
+            // Speed demon
+            if (score >= 100) {
+                unlockAchievement('speed100');
+            }
+            
+            // Careful handler
+            if (packedCount >= 50 && brokenCount === 0) {
+                unlockAchievement('noBroken50');
+            }
+            
+            // Survivor
+            if (gameRunning && Date.now() - gameStartTime >= 300000) {
+                unlockAchievement('survivor');
+            }
+        }
+
+        function updateStats() {
+            // Items per minute
+            const playTimeMinutes = (Date.now() - gameStartTime) / 60000;
+            const itemsPerMin = playTimeMinutes > 0 ? Math.round(packedCount / playTimeMinutes) : 0;
+            document.getElementById('itemsPerMin').textContent = itemsPerMin;
+            
+            // Accuracy
+            const totalProcessed = packedCount + brokenCount;
+            const accuracy = totalProcessed > 0 ? Math.round((packedCount / totalProcessed) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            
+            // Best combo
+            document.getElementById('bestCombo').textContent = `x${bestCombo.toFixed(1)}`;
+            
+            // Play time
+            const playTimeSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+            const minutes = Math.floor(playTimeSeconds / 60);
+            const seconds = playTimeSeconds % 60;
+            document.getElementById('playTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function showSpeedWarning() {
+            const warning = document.getElementById('speedWarning');
+            warning.style.display = 'block';
+            setTimeout(() => {
+                warning.style.display = 'none';
+            }, 2000);
+        }
+
+        function saveHighScore() {
+            highScores.push({
+                score: score,
+                date: new Date().toLocaleDateString(),
+                accuracy: Math.round((packedCount / (packedCount + brokenCount)) * 100)
+            });
+            
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 10); // Keep top 10
+            
+            localStorage.setItem('plateGameHighScores', JSON.stringify(highScores));
+        }
+
+        function showLeaderboard() {
+            const content = document.getElementById('leaderboardContent');
+            content.innerHTML = '';
+            
+            highScores.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'leaderboard-entry';
+                div.innerHTML = `
+                    <span class="leaderboard-rank">#${index + 1}</span>
+                    <span>${entry.score} pts</span>
+                    <span>${entry.accuracy}%</span>
+                    <span class="leaderboard-score">${entry.date}</span>
+                `;
+                content.appendChild(div);
+            });
+            
+            document.getElementById('leaderboard').style.display = 'block';
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboard').style.display = 'none';
+        }
+
+        function playPowerUpSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.4);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playAchievementSound() {
+            const notes = [523.25, 659.25, 783.99]; // C, E, G
+            
+            notes.forEach((freq, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime + index * 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.1 + 0.3);
+                
+                oscillator.start(audioContext.currentTime + index * 0.1);
+                oscillator.stop(audioContext.currentTime + index * 0.1 + 0.3);
+            });
+        }
+
+        function playRejectSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Descending tone for rejection
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function returnToNearestConveyorPosition(item) {
+            // Find nearest available position on conveyor
+            const currentX = item.position.x;
+            let targetX = currentX;
+            let targetZ = 0;
+            let foundSpot = false;
+            
+            // Check for available spot
+            for (let x = currentX; x >= -10; x -= 0.5) {
+                let spotClear = true;
+                
+                for (let other of porcelainItems) {
+                    if (other !== item && other.visible && other.userData.onConveyor && !other.userData.falling) {
+                        const dist = Math.abs(other.position.x - x);
+                        if (dist < 1.5) {
+                            spotClear = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (spotClear) {
+                    targetX = x;
+                    foundSpot = true;
+                    break;
+                }
+            }
+            
+            // If no spot found ahead, go to start
+            if (!foundSpot) {
+                targetX = -12;
+            }
+            
+            // Smooth animation to position
+            const startPos = item.position.clone();
+            const endPos = new THREE.Vector3(targetX, 1.5, targetZ);
+            const duration = 500;
+            const startTime = Date.now();
+            
+            item.userData.returning = true;
+            
+            function animateReturn() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                
+                item.position.lerpVectors(startPos, endPos, easeProgress);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateReturn);
+                } else {
+                    item.userData.onConveyor = true;
+                    item.userData.returning = false;
+                    item.position.y = 1.5;
+                }
+            }
+            
+            animateReturn();
+        }
+
+        function returnItemToConveyorStart(item) {
+            // Animate item returning to conveyor start
+            const startPos = item.position.clone();
+            const endPos = new THREE.Vector3(-12, 1.5, 0);
+            const duration = 1000;
+            const startTime = Date.now();
+            
+            item.userData.returning = true;
+            
+            function animateReturn() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Parabolic arc for natural movement
+                const height = Math.sin(progress * Math.PI) * 3;
+                
+                item.position.lerpVectors(startPos, endPos, progress);
+                item.position.y = 1.5 + height;
+                
+                // Spin while returning
+                item.rotation.y += 0.1;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateReturn);
+                } else {
+                    item.userData.onConveyor = true;
+                    item.userData.returning = false;
+                    item.userData.dragging = false;
+                    item.position.set(-12, 1.5, 0);
+                }
+            }
+            
+            animateReturn();
+        }
+
+        function getItemHeight(type) {
+            switch (type) {
+                case 'plate':
+                    return 0.25; // Plates are thin
+                case 'cup':
+                    return 0.85; // Cups are taller
+                case 'bowl':
+                    return 0.65; // Bowls are medium height
+                default:
+                    return 0.5;
+            }
+        }
+
+        function updateBoxHighlight(draggedItem) {
+            boxes.forEach(box => {
+                const distance = draggedItem.position.distanceTo(box.position);
+                const isNearby = distance < 3;
+                const isCorrectType = draggedItem.userData.type === box.userData.acceptedType;
+                const hasSpace = box.userData.items.length < box.userData.maxItems;
+                
+                // Reset all box materials first
+                box.children.forEach(child => {
+                    if (child.material && child.material.emissive) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                });
+                
+                if (isNearby && isCorrectType && hasSpace) {
+                    // Highlight correct box with green glow
+                    box.children.forEach(child => {
+                        if (child.material && !child.material.map) { // Don't affect textures
+                            child.material.emissive = new THREE.Color(0x00ff00);
+                            child.material.emissiveIntensity = 0.3;
+                        }
+                    });
+                } else if (isNearby && !isCorrectType) {
+                    // Highlight wrong box with red glow
+                    box.children.forEach(child => {
+                        if (child.material && !child.material.map) { // Don't affect textures
+                            child.material.emissive = new THREE.Color(0xff0000);
+                            child.material.emissiveIntensity = 0.3;
+                        }
+                    });
+                } else if (isNearby && !hasSpace) {
+                    // Highlight full box with orange glow
+                    box.children.forEach(child => {
+                        if (child.material && !child.material.map) { // Don't affect textures
+                            child.material.emissive = new THREE.Color(0xff8800);
+                            child.material.emissiveIntensity = 0.3;
+                        }
+                    });
+                }
+            });
+        }
+
+        function clearBoxHighlights() {
+            boxes.forEach(box => {
+                box.children.forEach(child => {
+                    if (child.material && child.material.emissive) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                });
+            });
+        }
+
+        function showWrongTypeWarning(itemType, boxType) {
+            const warning = document.createElement('div');
+            warning.style.position = 'fixed';
+            warning.style.top = '50%';
+            warning.style.left = '50%';
+            warning.style.transform = 'translate(-50%, -50%)';
+            warning.style.padding = '20px 40px';
+            warning.style.background = 'rgba(255, 0, 0, 0.9)';
+            warning.style.color = 'white';
+            warning.style.fontSize = '24px';
+            warning.style.fontWeight = 'bold';
+            warning.style.borderRadius = '10px';
+            warning.style.zIndex = '500';
+            warning.style.animation = 'shake 0.5s ease-in-out';
+            warning.textContent = `${itemType.toUpperCase()}S go in ${boxType.toUpperCase()} box!`;
+            
+            document.body.appendChild(warning);
+            
+            // Add shake animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes shake {
+                    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+                    25% { transform: translate(-52%, -50%) rotate(-2deg); }
+                    75% { transform: translate(-48%, -50%) rotate(2deg); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            setTimeout(() => {
+                warning.remove();
+                style.remove();
+            }, 2000);
+        }
+
+        function startGame() {
+            document.getElementById('startMenu').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            document.getElementById('boxIndicators').style.display = 'flex';
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('fpsCounter').style.display = 'block';
+            document.getElementById('statsPanel').style.display = 'block';
+            
+            gameRunning = true;
+            gameStartTime = Date.now();
+            resetGame();
+        }
+
+        function resetGame() {
+            // Save high score if game was running
+            if (gameRunning && score > 0) {
+                saveHighScore();
+            }
+            
+            score = 0;
+            packedCount = 0;
+            brokenCount = 0;
+            combo = 1;
+            bestCombo = 1;
+            conveyorSpeed = 0.02;
+            lastSpeedIncrease = 0;
+            totalItemsSpawned = 0;
+            gameStartTime = Date.now();
+            
+            // Reset power-ups
+            if (powerUpActive) {
+                deactivatePowerUp();
+            }
+            
+            // Clear all items
+            porcelainItems.forEach(item => {
+                item.visible = false;
+                item.userData.onConveyor = false;
+                // Reset material properties
+                if (item.material) {
+                    item.material.emissive = null;
+                    item.material.emissiveIntensity = 0;
+                }
+            });
+            porcelainItems = [];
+            
+            brokenPieces.forEach(piece => {
+                piece.visible = false;
+            });
+            brokenPieces = [];
+            
+            // Reset boxes
+            boxes.forEach(box => {
+                box.userData.items.forEach(item => {
+                    item.visible = false;
+                });
+                box.userData.items = [];
+            });
+            
+            // Clear particles
+            document.getElementById('particleContainer').innerHTML = '';
+            
+            updateHUD();
+            updateStats();
+            updateBoxIndicators();
+        }
+
+        // Make functions global
+        window.startGame = startGame;
+        window.closeLeaderboard = closeLeaderboard;
+
+        // Initialize the game
+        init();
+        animate();
+    </script>
+</body>
+</html>
