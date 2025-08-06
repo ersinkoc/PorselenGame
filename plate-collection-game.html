@@ -2020,13 +2020,13 @@
                 }
 
                 // Check if item reached the end - start falling
-                // Start falling exactly at conveyor end (conveyor is 20 units, centered at 0)
-                if (item.position.x >= 9.5 && !item.userData.falling) {
+                // Start falling to hit wagon center (wagon at x=11)
+                if (item.position.x >= 10.5 && !item.userData.falling) {
                     item.userData.falling = true;
                     item.userData.onConveyor = false;
                     item.userData.fallVelocity = 0;
-                    // Give slight forward momentum to fall into wagon
-                    item.userData.fallVelocityX = conveyorSpeed * 0.5;
+                    // Give forward momentum to reach wagon center
+                    item.userData.fallVelocityX = conveyorSpeed * 0.8;
                 }
             });
 
@@ -2253,11 +2253,7 @@
                 selectedObject.userData.onConveyor = false;
                 isDragging = true;
 
-                // Set drag plane at object height
-                dragPlane.setFromNormalAndCoplanarPoint(
-                    camera.getWorldDirection(new THREE.Vector3()).normalize(),
-                    selectedObject.position
-                );
+                // No offset needed - object will follow mouse directly
             }
         }
 
@@ -2267,10 +2263,28 @@
 
             if (isDragging && selectedObject) {
                 raycaster.setFromCamera(mouse, camera);
-                const intersectPoint = new THREE.Vector3();
-                raycaster.ray.intersectPlane(dragPlane, intersectPoint);
-                selectedObject.position.copy(intersectPoint);
-                selectedObject.position.y = 2;
+                
+                // Create a ray from camera through mouse position
+                const ray = raycaster.ray;
+                
+                // Calculate intersection with Y=2 plane (object height)
+                const targetY = 2;
+                const t = (targetY - ray.origin.y) / ray.direction.y;
+                
+                if (t > 0) { // Only if ray intersects plane in front of camera
+                    // Calculate world position at Y=2
+                    const worldPos = new THREE.Vector3();
+                    worldPos.copy(ray.direction).multiplyScalar(t).add(ray.origin);
+                    
+                    // Apply the position directly - object follows mouse exactly
+                    selectedObject.position.x = worldPos.x;
+                    selectedObject.position.y = targetY;
+                    selectedObject.position.z = worldPos.z;
+                    
+                    // Limit movement to reasonable bounds
+                    selectedObject.position.x = Math.max(-15, Math.min(15, selectedObject.position.x));
+                    selectedObject.position.z = Math.max(-10, Math.min(10, selectedObject.position.z));
+                }
                 
                 // Check which box we're hovering over
                 updateBoxHighlight(selectedObject);
